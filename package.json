@@ -1,0 +1,16 @@
+{
+  "name": "devtools-compat-proxy",
+  "version": "0.0.1",
+  "description": "A DevTools compatibility layer for iOS devices",
+  "main": "proxy.js",
+  "dependencies": {
+    "colors": "^1.1.2",
+    "ws": "^0.7.2"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node proxy.js"
+  },
+  "author": "Arty Gus",
+  "license": "MIT"
+}
