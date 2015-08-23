@@ -2,11 +2,12 @@
 
 var util = require('util'),
     colors = require('colors'),
-    debugProxy = require('./mapper'),
+    mapper = require('./mapper'),
     WebSocket = require('ws');
 
 var ws = new WebSocket('ws://localhost:9222/devtools/page/1'),
-    wss;
+    wss,
+    methodsBuf = {};
 
 ws.on('error', function(e) {
   console.log('ws error: ' + e.code);
@@ -19,6 +20,10 @@ ws.on('open', function() {
   wss.on('connection', function connection(socket) {
     socket.on('message', function(rawMsg) {
       console.log('proxyServer received:'.green + ' %s', rawMsg);
+
+      var msg = JSON.parse(rawMsg);
+      methodsBuf[msg.id] = msg.method;
+      console.log('[DEBUG] '.blue + ' %s', JSON.stringify(methodsBuf));
       ws.send(rawMsg);
     });
 
@@ -27,7 +32,12 @@ ws.on('open', function() {
 
       var msg = JSON.parse(rawMsg);
 
-      debugProxy.map(msg);
+      if ('id' in msg) {
+        console.log('[DEBUG] '.blue + ' method %s', methodsBuf[msg.id]);
+        mapper.map(methodsBuf[msg.id], msg.result);
+        delete methodsBuf[msg.id];
+      }
+
       socket.send(JSON.stringify(msg));
     });
   }); 
