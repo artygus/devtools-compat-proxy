@@ -12,21 +12,38 @@ var mapSelectorList = function(selectorList) {
   delete selectorList.range;  
 };
 
-var mapStyle = function(cssStyle) {
-  cssStyle.styleSheetId = cssStyle.styleId.styleSheetId;
+var mapCssProperty = function(cssProperty) {
+    if (cssProperty.status == "disabled") {
+    cssProperty.disabled = true;
+  } else if (cssProperty.status == "active") {
+    cssProperty.disabled = false;
+  }
+
+  delete  cssProperty.status;
+};
+
+var mapStyle = function(cssStyle, ruleOrigin) {
+  for (var i in cssStyle.cssProperties)
+    mapCssProperty(cssStyle.cssProperties[i]);
+
+  if (ruleOrigin !== "user-agent")
+    cssStyle.styleSheetId = cssStyle.styleId.styleSheetId;
+
   delete cssStyle.styleId;
   delete cssStyle.sourceLine;
   delete cssStyle.sourceURL;
+  delete cssStyle.width;
+  delete cssStyle.height;
 };
 
 var mapRule = function(cssRule) {
   if ('ruleId' in cssRule) {
-    // obj.styleSheetId = obj.ruleId.styleSheetId;
+    cssRule.styleSheetId = cssRule.ruleId.styleSheetId;
     delete cssRule.ruleId;
   }
 
   mapSelectorList(cssRule.selectorList);
-  mapStyle(cssRule.style);
+  mapStyle(cssRule.style, cssRule.origin);
 
   delete cssRule.sourceLine;
 };
