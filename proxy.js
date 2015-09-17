@@ -1,66 +1,16 @@
 #!/usr/bin/env node
 
-var util = require('util'),
-    colors = require('colors'),
-    mapper = require('./mapper'),
-    WebSocket = require('ws');
+const request = require('request'),
+      Page = require('./lib/page.js');
 
-var ws = new WebSocket('ws://localhost:9222/devtools/page/1'),
-    wss,
-    methodsBuf = {};
+request('http://localhost:9222/json', function (error, response, body) {
+  if (!error && response.statusCode == 200) {
+    var json = JSON.parse(body);
 
-ws.on('error', function(e) {
-  console.log('ws error: ' + e.code);
-});
-
-ws.on('open', function() {
-  console.log('connected to iwdp');
-  wss = new WebSocket.Server({port: 9322});
-
-  wss.on('connection', function connection(socket) {
-    socket.on('message', function(rawMsg) {
-      // console.log('proxyServer received:'.green + ' %s', rawMsg);
-
-      var msg = JSON.parse(rawMsg);
-      methodsBuf[msg.id] = msg.method;
-      // console.log('[DEBUG] '.blue + ' %s', JSON.stringify(methodsBuf));
-      ws.send(rawMsg);
-
-      if (msg.method === "CSS.enable") {
-        var fakeMsg = {id: -1, method: "CSS.getAllStyleSheets"};
-        ws.send(JSON.stringify(fakeMsg))
-        methodsBuf[fakeMsg.id] = fakeMsg.method;
-      }
-    });
-
-    ws.on('message', function(rawMsg) {
-      // console.log('proxyClient received:'.red + ' %s', rawMsg);
-
-      var msg = JSON.parse(rawMsg);
-
-      if ('id' in msg) {
-        if (msg.id === -1) {
-          console.log('[DEBUG] '.magenta + ' fake method %s', methodsBuf[msg.id]);
-
-          for (var i in msg.result.headers) {
-            var header = msg.result.headers[i];
-            header.isInline = false;
-            header.startLine = 0;
-            header.startColumn = 0;
-
-            msg = {method: "CSS.styleSheetAdded", params: {header: header}}
-            socket.send(JSON.stringify(msg));
-          }
-
-          return;
-        } else {
-          console.log('[DEBUG] '.blue + ' method %s', methodsBuf[msg.id]);
-          mapper.map(methodsBuf[msg.id], msg.result);
-          delete methodsBuf[msg.id];
-        }
-      }
-
-      socket.send(JSON.stringify(msg));
-    });
-  });
-});
+    for (var pageJson of json) {
+      new Page(pageJson);
+    }
+  } else {
+    console.log('is device connected on :9222?');
+  }
+})
